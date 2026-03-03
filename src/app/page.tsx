@@ -20,6 +20,11 @@ export default function Home() {
 
       const { token, url } = await res.json()
 
+      // Check if token or URL is undefined
+      if (!token || !url) {
+        throw new Error("Invalid token or URL received")
+      }
+
       setStatus("Connecting to LiveKit...")
 
       const newRoom = new Room()
