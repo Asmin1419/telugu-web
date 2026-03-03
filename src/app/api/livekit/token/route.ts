@@ -1,25 +1,22 @@
-import { NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
+import { NextResponse } from "next/server";
 
 export async function GET() {
-    const apiKey = process.env.LIVEKIT_API_KEY!;
-    const apiSecret = process.env.LIVEKIT_API_SECRET!;
+    const token = new AccessToken(
+        process.env.LIVEKIT_API_KEY,
+        process.env.LIVEKIT_API_SECRET,
+        { identity: `user-${Math.random().toString(36).slice(2)}` }
+    );
 
-    const at = new AccessToken(apiKey, apiSecret, {
-        identity: "user-" + Math.floor(Math.random() * 100000), // Unique user identity
-    });
-
-    at.addGrant({
+    token.addGrant({
         roomJoin: true,
-        room: "telugu-room",  // Room name (ensure this matches in the frontend)
-        agent: true,  // Allow the agent to join
+        room: "telugu-room",   // ← must match what agent expects
+        canPublish: true,
+        canSubscribe: true,
     });
-
-    // Debug log to confirm token and URL
-    console.log("Generated token and URL:", at.toJwt(), process.env.LIVEKIT_URL);
 
     return NextResponse.json({
-        token: await at.toJwt(),
-        url: process.env.LIVEKIT_URL,  // Make sure the URL is returned
+        token: await token.toJwt(),
+        url: process.env.LIVEKIT_URL,   // e.g. wss://asmin-9tp0nwl3.livekit.cloud
     });
 }
