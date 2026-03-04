@@ -10,7 +10,6 @@ import {
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 
-// ── Inner component (must be inside <LiveKitRoom>) ──────────────────────────
 function AgentUI() {
   const { state: agentState, audioTrack } = useVoiceAssistant();
   const room = useRoomContext();
@@ -28,11 +27,9 @@ function AgentUI() {
 
   return (
     <div className="agent-card">
-      {/* Title */}
       <h1 className="title">Telugu Bhavik 🎙️</h1>
       <p className="subtitle">Your AI Telugu Voice Assistant powered by LiveKit &amp; Sarvam</p>
 
-      {/* Voice visualizer — lights up when agent speaks */}
       <div className="visualizer-wrap">
         <BarVisualizer
           state={agentState}
@@ -42,29 +39,20 @@ function AgentUI() {
         />
       </div>
 
-      {/* Status pill */}
       <div className="status-pill">
         <span className={`dot dot--${agentState}`} />
         {stateLabel[agentState] ?? agentState}
       </div>
 
-      {/* Disconnect */}
       <button className="btn btn--red" onClick={handleDisconnect}>
         Disconnect
       </button>
 
-      {/*
-        ✅ THIS IS THE KEY FIX:
-        RoomAudioRenderer subscribes to ALL remote audio tracks in the room
-        and plays them through the browser's speakers automatically.
-        Without this, the agent's TTS voice is sent but never played.
-      */}
       <RoomAudioRenderer />
     </div>
   );
 }
 
-// ── Root component ──────────────────────────────────────────────────────────
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
   const [wsUrl, setWsUrl] = useState<string | null>(null);
@@ -75,13 +63,10 @@ export default function Home() {
     try {
       setStatus("fetching");
       setErrorMsg("");
-
       const res = await fetch("/api/livekit/token");
       if (!res.ok) throw new Error(`Token fetch failed: ${res.status}`);
-
       const data = await res.json();
       if (!data.token || !data.url) throw new Error("Invalid token/URL from server");
-
       setToken(data.token);
       setWsUrl(data.url);
       setStatus("connected");
@@ -101,8 +86,10 @@ export default function Home() {
   return (
     <>
       <style>{`
-        /* ── Reset & base ── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ── Full-screen centered layout — applies always ── */
+        html, body { height: 100%; }
 
         body {
           min-height: 100vh;
@@ -114,7 +101,16 @@ export default function Home() {
           justify-content: center;
         }
 
-        /* ── Card ── */
+        /* LiveKitRoom renders a div — make it fill and center too */
+        [data-lk-theme] {
+          width: 100% !important;
+          min-height: 100vh !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          background: transparent !important;
+        }
+
         .agent-card {
           background: rgba(255,255,255,0.06);
           backdrop-filter: blur(24px);
@@ -129,7 +125,6 @@ export default function Home() {
           gap: 1.25rem;
         }
 
-        /* ── Typography ── */
         .title {
           font-size: 2rem;
           font-weight: 800;
@@ -140,13 +135,8 @@ export default function Home() {
           letter-spacing: -0.5px;
         }
 
-        .subtitle {
-          color: #a78bbb;
-          font-size: 0.9rem;
-          line-height: 1.5;
-        }
+        .subtitle { color: #a78bbb; font-size: 0.9rem; line-height: 1.5; }
 
-        /* ── Visualizer ── */
         .visualizer-wrap {
           background: rgba(0,0,0,0.25);
           border-radius: 16px;
@@ -154,7 +144,6 @@ export default function Home() {
           border: 1px solid rgba(255,255,255,0.07);
         }
 
-        /* ── Status pill ── */
         .status-pill {
           display: inline-flex;
           align-items: center;
@@ -165,7 +154,6 @@ export default function Home() {
           padding: 0.4rem 1rem;
           font-size: 0.82rem;
           font-weight: 500;
-          letter-spacing: 0.2px;
           align-self: center;
         }
 
@@ -182,11 +170,10 @@ export default function Home() {
         .dot--initializing { background: #60a5fa; animation: pulse 1s infinite; }
 
         @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50%       { opacity: 0.55; transform: scale(1.35); }
+          0%,100% { opacity:1; transform:scale(1); }
+          50%      { opacity:0.55; transform:scale(1.35); }
         }
 
-        /* ── Buttons ── */
         .btn {
           width: 100%;
           padding: 0.85rem 1.5rem;
@@ -195,16 +182,15 @@ export default function Home() {
           font-size: 1rem;
           font-weight: 700;
           cursor: pointer;
-          letter-spacing: 0.3px;
           transition: transform 0.1s, filter 0.2s;
         }
         .btn:hover  { filter: brightness(1.15); }
         .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .btn--purple { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; }
         .btn--red    { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
 
-        /* ── Error msg ── */
         .error-box {
           background: rgba(220,38,38,0.15);
           border: 1px solid rgba(220,38,38,0.4);
@@ -214,15 +200,6 @@ export default function Home() {
           color: #fca5a5;
         }
 
-        /* ── Idle card ── */
-        .idle-card {
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-          align-items: stretch;
-        }
-
-        /* ── Mic icon ── */
         .mic-ring {
           width: 72px; height: 72px;
           margin: 0.5rem auto;
@@ -234,7 +211,6 @@ export default function Home() {
         }
       `}</style>
 
-      {/* ── Connected: use LiveKitRoom wrapper ── */}
       {status === "connected" && token && wsUrl ? (
         <LiveKitRoom
           token={token}
@@ -247,8 +223,7 @@ export default function Home() {
           <AgentUI />
         </LiveKitRoom>
       ) : (
-        /* ── Idle / error: show connect screen ── */
-        <div className="agent-card idle-card">
+        <div className="agent-card">
           <h1 className="title">Telugu Bhavik 🎙️</h1>
           <p className="subtitle">Your AI Telugu Voice Assistant powered by LiveKit &amp; Sarvam</p>
 
